@@ -11,6 +11,7 @@ public class SwiftFlutterScreenRecordingPlugin: NSObject, FlutterPlugin {
   var videoWriter: AVAssetWriter?
 
   var audioInput: AVAssetWriterInput!
+  var appAudioInput: AVAssetWriterInput!
   var videoWriterInput: AVAssetWriterInput?
   var nameVideo: String = ""
   var recordAudio: Bool = false
@@ -96,18 +97,19 @@ public class SwiftFlutterScreenRecordingPlugin: NSObject, FlutterPlugin {
         ],
       ]
 
-      if recordAudio {
-
-        let audioOutputSettings: [String: Any] = [
+      let audioOutputSettings: [String: Any] = [
           AVNumberOfChannelsKey: 2,
           AVFormatIDKey: kAudioFormatMPEG4AAC,
           AVSampleRateKey: 44100,
         ]
 
+      appAudioInput = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: audioOutputSettings)
+      videoWriter?.add(appAudioInput)
+
+      if recordAudio {
         audioInput = AVAssetWriterInput(
           mediaType: AVMediaType.audio, outputSettings: audioOutputSettings)
         videoWriter?.add(audioInput)
-
       }
 
       //Create the asset writer input object which is actually used to write out the video
@@ -163,10 +165,19 @@ public class SwiftFlutterScreenRecordingPlugin: NSObject, FlutterPlugin {
                   }
                 }
 
+              case RPSampleBufferType.audioApp:
+                if self.appAudioInput.isReadyForMoreMediaData {
+                  print("audioApp data added")
+                  if self.appAudioInput.append(cmSampleBuffer) == false {
+                    print(" we have a problem writing app audio")
+                    self.myResult!(false)
+                  }
+                }
+
               case RPSampleBufferType.audioMic:
                 if self.recordAudio {
                   if self.audioInput.isReadyForMoreMediaData {
-                    // print("audioMic data added")
+                    print("audioMic data added")
                     if self.audioInput.append(cmSampleBuffer) == false {
                       print(" we have a problem writing audio")
                       self.myResult!(false)
@@ -204,6 +215,7 @@ public class SwiftFlutterScreenRecordingPlugin: NSObject, FlutterPlugin {
     }
 
     self.videoWriterInput?.markAsFinished()
+    self.appAudioInput?.markAsFinished()
     self.audioInput?.markAsFinished()
 
     self.videoWriter?.finishWriting {
