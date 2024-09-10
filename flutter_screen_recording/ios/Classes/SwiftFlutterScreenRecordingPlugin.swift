@@ -81,11 +81,7 @@ public class SwiftFlutterScreenRecordingPlugin: NSObject, FlutterPlugin {
     //Create the video settings
     if #available(iOS 11.0, *) {
 
-      var codec = AVVideoCodecJPEG
-
-      if recordAudio {
-        codec = AVVideoCodecH264
-      }
+      let codec = AVVideoCodecType.h264
 
       let videoSettings: [String: Any] = [
         AVVideoCodecKey: codec,
